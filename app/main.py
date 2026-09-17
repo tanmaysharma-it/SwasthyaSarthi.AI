@@ -19,7 +19,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-       "https://swasthya-sarthi-frontend.vercel.app",,
+       "https://swasthya-sarthi-frontend.vercel.app",
         # add your deployed frontend URL here before the hackathon demo
     ],
     allow_credentials=True,

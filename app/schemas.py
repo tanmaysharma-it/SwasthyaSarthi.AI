@@ -81,18 +81,6 @@ class CycleHistoryOut(BaseModel):
     next_predicted_date: Optional[date] = None
 
 
-# ---------- Chatbot ----------
-
-class ChatIn(BaseModel):
-    message: str
-
-
-class ChatOut(BaseModel):
-    reply: str
-    severity: str  # "red" | "yellow" | "green"
-    is_emergency: bool
-
-
 # ---------- Community ----------
 
 class TrendPoint(BaseModel):
@@ -101,9 +89,17 @@ class TrendPoint(BaseModel):
     count: int
 
 
+class RegionTrendPoint(BaseModel):
+    region: str
+    symptom: str
+    count: int
+
+
 class CommunityTrendsOut(BaseModel):
     trends: List[TrendPoint]
     outbreak_alert: bool
+    region_trends: List[RegionTrendPoint] = []
+    your_region_alert: bool = False
 
 
 # ---------- Medications ----------
@@ -177,3 +173,18 @@ class SchemeOut(BaseModel):
 class SchemeListOut(BaseModel):
     condition: str
     schemes: List[SchemeOut]
+
+
+# ---------- Chatbot ----------
+# (defined last since it references SchemeOut above)
+
+class ChatIn(BaseModel):
+    message: str
+
+
+class ChatOut(BaseModel):
+    reply: str
+    severity: str  # "red" | "yellow" | "green"
+    is_emergency: bool
+    habit_note: Optional[str] = None
+    scheme_suggestion: Optional[SchemeOut] = None

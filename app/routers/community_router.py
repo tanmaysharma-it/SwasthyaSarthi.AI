@@ -10,8 +10,6 @@ from app import models, schemas, auth
 
 router = APIRouter(prefix="/community", tags=["Community"])
 
-# If any single symptom is logged by more users than this within 7 days,
-# flag an outbreak alert. Tune based on real usage volume during the hackathon demo.
 OUTBREAK_THRESHOLD = 5
 
 
@@ -37,4 +35,35 @@ def get_trends(db: Session = Depends(get_db), current_user: models.User = Depend
         symptom_totals[row.symptom] += row.count
     outbreak_alert = any(total >= OUTBREAK_THRESHOLD for total in symptom_totals.values())
 
-    return schemas.CommunityTrendsOut(trends=trends, outbreak_alert=outbreak_alert)
+    # Region-wise breakdown (which diseases/symptoms are trending in which region)
+    region_rows = (
+        db.query(
+            models.SymptomEntry.region,
+            models.SymptomEntry.symptom,
+            func.count(models.SymptomEntry.id).label("count"),
+        )
+        .filter(models.SymptomEntry.created_at >= since, models.SymptomEntry.region.isnot(None))
+        .group_by(models.SymptomEntry.region, models.SymptomEntry.symptom)
+        .all()
+    )
+
+    region_trends = [
+        schemas.RegionTrendPoint(region=row.region, symptom=row.symptom, count=row.count)
+        for row in region_rows
+    ]
+
+    # Is there an outbreak specifically in the current user's own region?
+    your_region_alert = False
+    if current_user.region:
+        your_region_totals = defaultdict(int)
+        for row in region_rows:
+            if row.region == current_user.region:
+                your_region_totals[row.symptom] += row.count
+        your_region_alert = any(total >= OUTBREAK_THRESHOLD for total in your_region_totals.values())
+
+    return schemas.CommunityTrendsOut(
+        trends=trends,
+        outbreak_alert=outbreak_alert,
+        region_trends=region_trends,
+        your_region_alert=your_region_alert,
+    )
